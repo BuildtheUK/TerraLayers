@@ -1,0 +1,23 @@
+# TerraLayers configuration
+#
+# The plugin will automatically update this file when newer versions add keys or change defaults.
+# Your existing values are preserved. A timestamped backup (config.yml.bak-YYYYMMDD-HHMMSS) is created
+# before automatic updates.
+#
+# Do not edit `config-version` unless asked by the developer; it is used to manage migrations.
+config-version: 1
+
+# World height per layer (in blocks). Recommended: 1024; must be a multiple of 16
+worldHeight: 1024
+
+# Overlap/buffer between adjacent layers (in blocks). Recommended: 256; must be a multiple of 16
+bufferSize: 256
+
+# Global minimum y-level; must be a multiple of `worldHeight`.
+globalMin: -11264
+
+# Global maximum y-level; must be a multiple of `worldHeight` and greater than `globalMin`.
+globalMax: 9216
+
+# The base world name, each layer will append the y-range to this name.
+worldBaseName: earth

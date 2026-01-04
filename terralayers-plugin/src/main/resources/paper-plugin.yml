@@ -1,0 +1,16 @@
+name: TerraLayers
+version: ${project.version}
+main: org.btuk.terralayers.plugin.TerraLayersPlugin
+api-version: '1.21'
+load: STARTUP
+
+commands:
+  terralayers:
+    description: TerraLayers admin commands
+    usage: /<command> reload
+    permission: terralayers.reload
+
+permissions:
+  terralayers.reload:
+    description: Allows reloading the TerraLayers configuration
+    default: op

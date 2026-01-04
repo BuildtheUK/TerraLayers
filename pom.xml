@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>org.btuk</groupId>
+    <artifactId>terralayers-parent</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
+
+    <name>TerraLayers Parent</name>
+
+    <properties>
+        <java.version>21</java.version>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <maven.compiler.source>${java.version}</maven.compiler.source>
+        <maven.compiler.target>${java.version}</maven.compiler.target>
+
+        <!-- External Minecraft-related dependency version -->
+        <paper.version>1.21.11-R0.1-SNAPSHOT</paper.version>
+        <multiverse.version>5.4.0</multiverse.version>
+
+    </properties>
+
+    <modules>
+        <module>terralayers-api</module>
+        <module>terralayers-plugin</module>
+        <module>terralayers-converter</module>
+        <module>terralayers-datapack</module>
+    </modules>
+
+    <repositories>
+        <!-- Required for Paper -->
+        <repository>
+            <id>papermc-repo</id>
+            <url>https://repo.papermc.io/repository/maven-public/</url>
+        </repository>
+
+        <!-- Required for Multiverse -->
+        <repository>
+            <id>onarandombox</id>
+            <url>https://repo.onarandombox.com/content/groups/public/</url>
+        </repository>
+    </repositories>
+</project>
