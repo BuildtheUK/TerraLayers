@@ -4,6 +4,8 @@ import org.btuk.terralayers.datapack.compatability.FileHelper;
 import org.btuk.terralayers.datapack.compatability.PackVersion;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Comparator;
@@ -63,28 +65,30 @@ public class Datapack {
         }
 
         try {
-            Files.createDirectory(relativePathFromServer);
+            Files.createDirectories(relativePathFromServer);
 
             // Get the pack.mcmeta file for this version and save it datapack directory.
-            Path packMcMeta = FileHelper.getPackMCMeta(version);
-            Files.copy(packMcMeta, relativePathFromServer.resolve("pack.mcmeta"));
+            Path packMcMetaTarget = relativePathFromServer.resolve("pack.mcmeta");
+            try (InputStream is = FileHelper.getPackMCMeta(version).openStream()) {
+                Files.copy(is, packMcMetaTarget);
+            }
 
             // Create the data/minecraft/dimension_type directory.
             Files.createDirectories(relativePathFromServer.resolve("data/minecraft/dimension_type"));
 
             // Get the overworld.json dimension_type and replace the template values.
-            Path overworldDimensionType = FileHelper.getOverworldDimensionType(version);
-
-            // Read the content of the template file
-            String content = Files.readString(overworldDimensionType);
-
-            // Replace the placeholders for the minY and worldHeight.
-            content = content.replace("%minY%", String.valueOf(yMin));
-            content = content.replace("%worldHeight%", String.valueOf(worldHeight));
-
-            // Write the modified content to the new file location.
             Path targetPath = relativePathFromServer.resolve("data/minecraft/dimension_type/overworld.json");
-            Files.writeString(targetPath, content);
+            try (InputStream is = FileHelper.getOverworldDimensionType(version).openStream()) {
+                // Read the content of the template file
+                String content = new String(is.readAllBytes());
+
+                // Replace the placeholders for the yMin and worldHeight.
+                content = content.replace("%yMin%", String.valueOf(yMin));
+                content = content.replace("%worldHeight%", String.valueOf(worldHeight));
+
+                // Write the modified content to the new file location.
+                Files.writeString(targetPath, content);
+            }
 
         } catch (IOException e) {
             logger.severe("Failed to save datapack to disk: " + e.getMessage());
@@ -117,4 +121,11 @@ public class Datapack {
         return version;
     }
 
+    public int getYMin() {
+        return yMin;
+    }
+
+    public int getWorldHeight() {
+        return worldHeight;
+    }
 }

@@ -35,7 +35,7 @@ public class DatapackManager {
      * @return true if the datapack was successfully migrated
      */
     public boolean migrateDatapack(Datapack datapack) {
-
+        return true;
     }
 
     /**
@@ -56,6 +56,6 @@ public class DatapackManager {
      * @return true if the datapack was reloaded
      */
     public boolean reloadDatapack(Datapack datapack) {
-
+        return true;
     }
 }

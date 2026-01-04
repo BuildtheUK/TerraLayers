@@ -26,7 +26,7 @@
     <modules>
         <module>terralayers-api</module>
         <module>terralayers-plugin</module>
-        <module>terralayers-converter</module>
+<!--        <module>terralayers-converter</module>-->
         <module>terralayers-datapack</module>
     </modules>
 

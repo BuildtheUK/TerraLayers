@@ -15,17 +15,13 @@ public class FileHelper {
      * @param version the datapack version
      * @return the path to the pack mc meta file in the resources directory
      */
-    public static Path getPackMCMeta(String version) {
-        try {
-            String resourcePath = "TerraLayers/pack.mcmeta." + version;
-            URL resourceUrl = FileHelper.class.getClassLoader().getResource(resourcePath);
-            if (resourceUrl != null) {
-                return Paths.get(resourceUrl.toURI());
-            } else {
-                throw new IllegalArgumentException("Resource not found: " + resourcePath);
-            }
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to get path for pack.mcmeta version " + version, e);
+    public static URL getPackMCMeta(String version) {
+        String resourcePath = "TerraLayers/pack.mcmeta." + version;
+        URL resourceUrl = FileHelper.class.getClassLoader().getResource(resourcePath);
+        if (resourceUrl != null) {
+            return resourceUrl;
+        } else {
+            throw new IllegalArgumentException("Resource not found: " + resourcePath);
         }
     }
 
@@ -35,17 +31,13 @@ public class FileHelper {
      * @param version the datapack version
      * @return the path to the pack mc meta file in the resources directory
      */
-    public static Path getOverworldDimensionType(String version) {
-        try {
-            String resourcePath = "TerraLayers/dimension_type." + version;
-            URL resourceUrl = FileHelper.class.getClassLoader().getResource(resourcePath);
-            if (resourceUrl != null) {
-                return Paths.get(resourceUrl.toURI());
-            } else {
-                throw new IllegalArgumentException("Resource not found: " + resourcePath);
-            }
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to get path for dimension_type/overworld.json version " + version, e);
+    public static URL getOverworldDimensionType(String version) {
+        String resourcePath = "TerraLayers/dimension_type/overworld.json." + version;
+        URL resourceUrl = FileHelper.class.getClassLoader().getResource(resourcePath);
+        if (resourceUrl != null) {
+            return resourceUrl;
+        } else {
+            throw new IllegalArgumentException("Resource not found: " + resourcePath);
         }
     }
 }

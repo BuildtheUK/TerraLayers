@@ -1,22 +1,19 @@
 package org.btuk.terralayers.plugin.command;
 
+import com.mojang.brigadier.Command;
+import com.mojang.brigadier.context.CommandContext;
+import io.papermc.paper.command.brigadier.CommandSourceStack;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
-import org.btuk.terralayers.api.LayerManager;
 import org.btuk.terralayers.datapack.Datapack;
 import org.btuk.terralayers.datapack.DatapackManager;
 import org.btuk.terralayers.plugin.TerraLayersPlugin;
 import org.btuk.terralayers.plugin.config.ConfigManager;
 import org.btuk.terralayers.plugin.impl.SimpleLayerManager;
-import org.btuk.terralayers.plugin.impl.SimpleLayeredWorld;
 import org.btuk.terralayers.plugin.multiverse.WorldManager;
-import org.bukkit.ChatColor;
 import org.bukkit.World;
-import org.bukkit.command.Command;
-import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
-import org.jetbrains.annotations.NotNull;
 import org.mvplugins.multiverse.core.world.LoadedMultiverseWorld;
 
 import java.io.FileInputStream;
@@ -27,8 +24,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
-public class TerraLayersCommand implements CommandExecutor {
+public class TerraLayersCommand {
 
     private final TerraLayersPlugin plugin;
 
@@ -45,43 +43,31 @@ public class TerraLayersCommand implements CommandExecutor {
         this.worldManager = worldManager;
     }
 
-    @Override
-    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, String[] args) {
-        if (args.length == 0) {
-            info(sender, label);
-            return true;
+    public int reload(CommandContext<CommandSourceStack> context) {
+        CommandSender sender = context.getSource().getSender();
+        if (!sender.hasPermission("terralayers.reload")) {
+            noPermission(sender);
+            return Command.SINGLE_SUCCESS;
         }
-
-        String sub = args[0].toLowerCase();
-        switch (sub) {
-            case "reload" -> {
-                if (!sender.hasPermission("terralayers.reload")) {
-                    noPermission(sender);
-                    return true;
-                }
-                long start = System.currentTimeMillis();
-                plugin.reloadFromDisk();
-                long took = System.currentTimeMillis() - start;
-                sender.sendMessage(Component.text("TerraLayers config reloaded (" + took + "ms). Version: "
-                        + plugin.getConfigManager().getCurrentVersion() + " (bundled " + plugin.getConfigManager().getBundledVersion() + ")", NamedTextColor.GREEN));
-                if (sender instanceof Player) {
-                    plugin.getLogger().info(sender.getName() + " reloaded TerraLayers configuration.");
-                }
-                return true;
-            }
-
-            case "init" -> {
-                if (!sender.hasPermission("terralayers.init")) {
-                    noPermission(sender);
-                    return true;
-                }
-                initLayers(sender);
-                return true;
-            }
+        long start = System.currentTimeMillis();
+        plugin.reloadFromDisk();
+        long took = System.currentTimeMillis() - start;
+        sender.sendMessage(Component.text("TerraLayers config reloaded (" + took + "ms). Version: "
+                + plugin.getConfigManager().getCurrentVersion() + " (bundled " + plugin.getConfigManager().getBundledVersion() + ")", NamedTextColor.GREEN));
+        if (sender instanceof Player) {
+            plugin.getLogger().info(sender.getName() + " reloaded TerraLayers configuration.");
         }
+        return Command.SINGLE_SUCCESS;
+    }
 
-        info(sender, label);
-        return true;
+    public int init(CommandContext<CommandSourceStack> context) {
+        CommandSender sender = context.getSource().getSender();
+        if (!sender.hasPermission("terralayers.init")) {
+            noPermission(sender);
+            return Command.SINGLE_SUCCESS;
+        }
+        initLayers(sender);
+        return Command.SINGLE_SUCCESS;
     }
 
     private void info(CommandSender sender, String label) {
@@ -131,7 +117,7 @@ public class TerraLayersCommand implements CommandExecutor {
             return;
         }
 
-        DatapackManager datapackManager = new DatapackManager(plugin.getLogger(), -bufferSize, worldHeight + bufferSize);
+        DatapackManager datapackManager = new DatapackManager(plugin.getLogger(), -bufferSize, worldHeight + 2 * bufferSize);
         String minecraftVersion = plugin.getServer().getMinecraftVersion();
 
         // Create the datapack for the world y-range.
@@ -140,37 +126,48 @@ public class TerraLayersCommand implements CommandExecutor {
         // Add the datapack to the server.
         boolean success = datapackManager.saveDatapackToWorld(datapack, plugin.getServer().getWorldContainer().toPath(), defaultWorldName);
 
-        // Ensure the datapack is enabled on the server.
+        // Ensure the datapack is added to the server.
         if (!success) {
             sender.sendMessage(Component.text("Failed to create datapack, please check the server logs for more information", NamedTextColor.RED));
         }
 
+        // Enable the datapack.
+
         // Create a world for each layer.
         String worldBaseName = configManager.getWorldBaseName();
         List<CompletableFuture<LoadedMultiverseWorld>> worldFutures = new ArrayList<>();
-        List<LoadedMultiverseWorld> worlds = new ArrayList<>();
+        int delayTicks = 0;
+        int delayIncrement = 20;
+
         for (int y = minY; y < maxY; y += worldHeight) {
             // Create the world using the Multiverse API.
-            worldFutures.add(worldManager.createWorld(sender, worldBaseName + "_" + y + "_" + (y + worldHeight)));
-        }
-        for (CompletableFuture<LoadedMultiverseWorld> future : worldFutures) {
-            worlds.add(future.join());
+            worldFutures.add(worldManager.createWorld(plugin, sender, worldBaseName + "_" + y + "_" + (y + worldHeight), delayTicks));
+            delayTicks += delayIncrement;
         }
 
-        // Determine the new default world and update the config to reflect that.
-        World defaultWorld = worlds.getFirst().getBukkitWorld().get();
-        plugin.getServer().setRespawnWorld(defaultWorld);
-        serverProperties.setProperty("level-name", defaultWorld.getName());
-        saveServerProperties(serverProperties);
-        worldManager.unloadWorld(defaultWorldName);
+        // Wait until the worlds are created.
+        CompletableFuture.allOf(worldFutures.toArray(new CompletableFuture[0])).thenRunAsync(() -> {
+            List<LoadedMultiverseWorld> worlds = worldFutures.stream()
+                    .map(CompletableFuture::join)
+                    .toList();
 
-        // Save the datapack to the new default world.
-        datapackManager.saveDatapackToWorld(datapack, plugin.getServer().getWorldContainer().toPath(), defaultWorld.getName());
+            // Determine the new default world and update the config to reflect that.
+            World defaultWorld = worlds.getFirst().getBukkitWorld().get();
 
-        long took = System.currentTimeMillis() - start;
-        sender.sendMessage(Component.text("TerraLayers initialized (" + took + "ms).", NamedTextColor.GREEN));
-        sender.sendMessage(Component.text("Created " + layerManager.getLayers().size() + " worlds, between y " + minY + " and " + maxY, NamedTextColor.GREEN));
-        sender.sendMessage(Component.text("Restart the server to apply the changes.", NamedTextColor.GREEN));
+            serverProperties.setProperty("level-name", defaultWorld.getName());
+            saveServerProperties(serverProperties);
+            datapackManager.saveDatapackToWorld(datapack, plugin.getServer().getWorldContainer().toPath(), defaultWorld.getName());
+
+            plugin.getServer().getScheduler().runTask(plugin, () -> {
+                plugin.getServer().setRespawnWorld(defaultWorld);
+                worldManager.unloadWorld(defaultWorldName);
+
+                long took = System.currentTimeMillis() - start;
+                sender.sendMessage(Component.text("TerraLayers initialized (" + took + "ms).", NamedTextColor.GREEN));
+                sender.sendMessage(Component.text("Created " + worlds.size() + " worlds, between y " + minY + " and " + maxY, NamedTextColor.GREEN));
+                sender.sendMessage(Component.text("Restart the server to apply the changes.", NamedTextColor.GREEN));
+            });
+        });
     }
 
     private Properties loadServerProperties() {

@@ -1,6 +1,11 @@
 package org.btuk.terralayers.plugin;
 
+import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import com.mojang.brigadier.tree.LiteralCommandNode;
+import io.papermc.paper.command.brigadier.CommandSourceStack;
+import io.papermc.paper.command.brigadier.Commands;
 import io.papermc.paper.datapack.DatapackManager;
+import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
 import org.btuk.terralayers.api.LayerManager;
 import org.btuk.terralayers.plugin.command.TerraLayersCommand;
 import org.btuk.terralayers.plugin.config.ConfigManager;
@@ -35,11 +40,19 @@ public final class TerraLayersPlugin extends JavaPlugin {
 
         this.worldManager = new WorldManager();
 
+        // Load the layers
+
+
         // Register command(s)
-        PluginCommand terraLayersCommand = getCommand("terralayers");
-        if (terraLayersCommand != null) {
-            terraLayersCommand.setExecutor(new TerraLayersCommand(this, layerManager, configManager, worldManager));
-        }
+        TerraLayersCommand terraLayersCommand = new TerraLayersCommand(this, layerManager, configManager, worldManager);
+        this.getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, commands -> {
+            LiteralArgumentBuilder<CommandSourceStack> command = Commands.literal("terralayers")
+                    .then(Commands.literal("reload").executes(terraLayersCommand::reload))
+                    .then(Commands.literal("init").executes(terraLayersCommand::init));
+
+            LiteralCommandNode<CommandSourceStack> buildCommand = command.build();
+            commands.registrar().register(buildCommand);
+        });
 
         getLogger().info("TerraLayers services registered: LayerManager");
     }
@@ -63,7 +76,7 @@ public final class TerraLayersPlugin extends JavaPlugin {
     public void initializeServicesFromConfig() {
         int worldHeight = configManager.getWorldHeight();
         int bufferSize = configManager.getBufferSize();
-        this.layerManager = new SimpleLayerManager(worldHeight, bufferSize);
+        this.layerManager = new SimpleLayerManager(this, worldHeight, bufferSize);
     }
 
     public void reloadFromDisk() {
