@@ -1,7 +1,11 @@
 package org.btuk.terralayers.plugin.listeners;
 
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextDecoration;
 import org.btuk.terralayers.api.LayerManager;
 import org.btuk.terralayers.api.LayeredWorld;
+import org.btuk.terralayers.plugin.config.ConfigManager;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.player.PlayerMoveEvent;
@@ -16,12 +20,13 @@ import java.util.Optional;
 public final class SwitchLayerListener implements TerraLayersListener {
 
     private final JavaPlugin plugin;
-
     private final LayerManager layerManager;
+    private final ConfigManager configManager;
 
-    public SwitchLayerListener(JavaPlugin plugin, LayerManager layerManager) {
+    public SwitchLayerListener(JavaPlugin plugin, LayerManager layerManager, ConfigManager configManager) {
         this.plugin = plugin;
         this.layerManager = layerManager;
+        this.configManager = configManager;
         this.register();
     }
 
@@ -46,15 +51,26 @@ public final class SwitchLayerListener implements TerraLayersListener {
 
     private void switchLayer(PlayerMoveEvent event) {
         // Get the new layered world.
-        Optional<LayeredWorld> optionalCurrentLayer = layerManager.getLayerForWorld(event.getTo().getWorld());
+        LayeredWorld currentLayer = layerManager.getLayerForWorld(event.getTo().getWorld());
+
+        if (currentLayer == null) {
+            return;
+        }
 
         // If the y-level of the new layer does not fit in the world, teleport them to the correct layer.
-        optionalCurrentLayer.ifPresent(currentLayer -> {
-            if (currentLayer.getTeleportMinY() > event.getTo().getY() || currentLayer.getTeleportMaxY() < event.getTo().getY()) {
-                layerManager.getLayerForGlobalY(event.getTo().getBlockY()).ifPresent(newLayer -> {
-                    event.getTo().setWorld(newLayer.getWorld());
-                });
-            }
-        });
+        // Correct the y-level to take the offset of the new world into account.
+        int actualY = event.getTo().getBlockY() + currentLayer.getMinY();
+        if (currentLayer.getTeleportMinY() > actualY || currentLayer.getTeleportMaxY() < actualY) {
+            // TODO: Deal with players outside min or max y.
+            layerManager.getLayerForGlobalY(actualY).ifPresent(newLayer -> {
+                plugin.getLogger().info("Player " + event.getPlayer().getName() + " moved to a layer outside of their current world, teleporting them to the correct layer.");
+                double y = event.getTo().getY();
+                y = currentLayer.getTeleportMinY() > actualY ? y + configManager.getWorldHeight() : y - configManager.getWorldHeight();
+                event.getTo().setWorld(newLayer.getWorld());
+                event.getTo().setY(y);
+                plugin.getLogger().info("Player " + event.getPlayer().getName() + " teleported to layer " + newLayer.getName() + " at y=" + y);
+            });
+        }
+        event.getPlayer().sendActionBar(Component.text("Y: " + actualY, NamedTextColor.GOLD, TextDecoration.BOLD));
     }
 }

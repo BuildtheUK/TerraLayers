@@ -2,7 +2,7 @@ package org.btuk.terralayers.api;
 
 import org.bukkit.World;
 
-import java.util.List;
+import java.util.Collection;
 import java.util.Optional;
 
 /**
@@ -12,7 +12,7 @@ public interface LayerManager {
     /**
      * All configured layers in ascending order by global Y minimum.
      */
-    List<LayeredWorld> getLayers();
+    Collection<LayeredWorld> getLayers();
 
     /**
      * Finds the layer that covers the provided global Y coordinate.
@@ -26,7 +26,7 @@ public interface LayerManager {
      *
      * @param world the Bukkit world
      */
-    Optional<LayeredWorld> getLayerForWorld(World world);
+    LayeredWorld getLayerForWorld(World world);
 
     /**
      * The configured world height per layer.

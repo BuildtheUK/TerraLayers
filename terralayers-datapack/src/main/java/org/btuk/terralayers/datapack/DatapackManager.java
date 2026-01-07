@@ -1,5 +1,7 @@
 package org.btuk.terralayers.datapack;
 
+import org.bukkit.Bukkit;
+
 import java.nio.file.Path;
 import java.util.logging.Logger;
 
@@ -25,7 +27,11 @@ public class DatapackManager {
     }
 
     public Datapack createDatapack(String minecraftVersion) {
-        return new Datapack(logger, minecraftVersion, yMin, worldHeight);
+        return new Datapack(logger, DATAPACK_NAME, minecraftVersion, yMin, worldHeight);
+    }
+
+    public Datapack loadDatapack(Path worldPath) {
+        return new Datapack(logger, DATAPACK_NAME, worldPath.resolve(DATAPACK_DIRECTORY));
     }
 
     /**
@@ -35,6 +41,7 @@ public class DatapackManager {
      * @return true if the datapack was successfully migrated
      */
     public boolean migrateDatapack(Datapack datapack) {
+        // We currently only support 1.21.11.
         return true;
     }
 
@@ -46,16 +53,24 @@ public class DatapackManager {
      * @return whether the datapack was successfully saved
      */
     public boolean saveDatapackToWorld(Datapack datapack, Path serverPath, String worldName) {
-        return datapack.saveToDisk(serverPath.resolve(worldName).resolve(DATAPACK_DIRECTORY).resolve(DATAPACK_NAME));
+        return datapack.saveToDisk(serverPath.resolve(worldName).resolve(DATAPACK_DIRECTORY));
     }
 
     /**
      * Reloads the datapack on the server.
      *
-     * @param datapack the datapack to reload
+     * @param logger logger
      * @return true if the datapack was reloaded
      */
-    public boolean reloadDatapack(Datapack datapack) {
+    public boolean enableDatapack(Logger logger, Datapack datapack) {
+        io.papermc.paper.datapack.DatapackManager manager = Bukkit.getDatapackManager();
+        manager.refreshPacks();
+        io.papermc.paper.datapack.Datapack pack = manager.getPack("file/" + datapack.getName());
+        if (pack == null) {
+            logger.severe("Failed to reload datapack: " + datapack.getName());
+            return false;
+        }
+        pack.setEnabled(true);
         return true;
     }
 }

@@ -18,7 +18,7 @@ public class SimpleLayerManager implements LayerManager {
     private final TerraLayersPlugin plugin;
     private final int worldHeight;
     private final int bufferSize;
-    private final List<LayeredWorld> layers = new ArrayList<>();
+    private final Map<String, LayeredWorld> layers = new HashMap<>();
 
     public SimpleLayerManager(TerraLayersPlugin plugin, int worldHeight, int bufferSize) {
         this.plugin = plugin;
@@ -27,20 +27,20 @@ public class SimpleLayerManager implements LayerManager {
     }
 
     @Override
-    public List<LayeredWorld> getLayers() {
-        return Collections.unmodifiableList(layers);
+    public Collection<LayeredWorld> getLayers() {
+        return layers.values();
     }
 
     @Override
     public Optional<LayeredWorld> getLayerForGlobalY(int globalY) {
-        return layers.stream()
+        return layers.values().stream()
                 .filter(l -> globalY >= l.getMinY() && globalY < l.getMaxY())
                 .findFirst();
     }
 
     @Override
-    public Optional<LayeredWorld> getLayerForWorld(World world) {
-        return layers.stream().filter(l -> l.getWorld().equals(world)).findFirst();
+    public LayeredWorld getLayerForWorld(World world) {
+        return layers.get(world.getName());
     }
 
     @Override
@@ -86,6 +86,7 @@ public class SimpleLayerManager implements LayerManager {
             LayeredWorld layeredWorld = new SimpleLayeredWorld(world, i, i + worldHeight, bufferSize);
             addLayer(layeredWorld);
         }
+        plugin.getLogger().info("Loaded " + layers.size() + " layers.");
     }
 
     private void addLayer(LayeredWorld layer) {
@@ -98,7 +99,6 @@ public class SimpleLayerManager implements LayerManager {
         if (layer.getMaxY() - layer.getMinY() != this.worldHeight) {
             throw new IllegalArgumentException("layer height must match configured worldHeight");
         }
-        this.layers.add(layer);
-        this.layers.sort(Comparator.comparingInt(LayeredWorld::getMinY));
+        this.layers.put(layer.getName(), layer);
     }
 }

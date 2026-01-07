@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
 
 public class TerraLayersCommand {
 
@@ -123,15 +122,9 @@ public class TerraLayersCommand {
         // Create the datapack for the world y-range.
         Datapack datapack = datapackManager.createDatapack(minecraftVersion);
 
-        // Add the datapack to the server.
-        boolean success = datapackManager.saveDatapackToWorld(datapack, plugin.getServer().getWorldContainer().toPath(), defaultWorldName);
-
-        // Ensure the datapack is added to the server.
-        if (!success) {
-            sender.sendMessage(Component.text("Failed to create datapack, please check the server logs for more information", NamedTextColor.RED));
+        if (!saveAndEnableDatapack(datapackManager, datapack, sender, defaultWorldName)) {
+            return;
         }
-
-        // Enable the datapack.
 
         // Create a world for each layer.
         String worldBaseName = configManager.getWorldBaseName();
@@ -156,11 +149,14 @@ public class TerraLayersCommand {
 
             serverProperties.setProperty("level-name", defaultWorld.getName());
             saveServerProperties(serverProperties);
-            datapackManager.saveDatapackToWorld(datapack, plugin.getServer().getWorldContainer().toPath(), defaultWorld.getName());
 
             plugin.getServer().getScheduler().runTask(plugin, () -> {
                 plugin.getServer().setRespawnWorld(defaultWorld);
                 worldManager.unloadWorld(defaultWorldName);
+
+                if (!saveAndEnableDatapack(datapackManager, datapack, sender, defaultWorld.getName())) {
+                    return;
+                }
 
                 long took = System.currentTimeMillis() - start;
                 sender.sendMessage(Component.text("TerraLayers initialized (" + took + "ms).", NamedTextColor.GREEN));
@@ -190,5 +186,25 @@ public class TerraLayersCommand {
         } catch (IOException e) {
             plugin.getLogger().severe("Error updating server.properties: " + e.getMessage());
         }
+    }
+
+    private boolean saveAndEnableDatapack(DatapackManager datapackManager, Datapack datapack, CommandSender sender, String world) {
+        // Add the datapack to the server.
+        boolean datapackSaved = datapackManager.saveDatapackToWorld(datapack, plugin.getServer().getWorldContainer().toPath(), world);
+
+        // Ensure the datapack is added to the server.
+        if (!datapackSaved) {
+            sender.sendMessage(Component.text("Failed to create datapack, please check the server logs for more information", NamedTextColor.RED));
+            return false;
+        }
+
+        // Enable the datapack.
+        boolean datapackEnabled = datapackManager.enableDatapack(plugin.getLogger(), datapack);
+
+        if (!datapackEnabled) {
+            sender.sendMessage(Component.text("Failed to enable datapack, please check the server logs for more information", NamedTextColor.RED));
+            return false;
+        }
+        return true;
     }
 }

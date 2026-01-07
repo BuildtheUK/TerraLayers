@@ -64,25 +64,21 @@
         <dependency>
             <groupId>org.btuk</groupId>
             <artifactId>terralayers-api</artifactId>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>org.btuk</groupId>
             <artifactId>terralayers-datapack</artifactId>
-            <version>${project.version}</version>
         </dependency>
 
         <!-- External Minecraft-related dependencies -->
         <dependency>
             <groupId>io.papermc.paper</groupId>
             <artifactId>paper-api</artifactId>
-            <version>${paper.version}</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.mvplugins.multiverse.core</groupId>
             <artifactId>multiverse-core</artifactId>
-            <version>${multiverse.version}</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>
