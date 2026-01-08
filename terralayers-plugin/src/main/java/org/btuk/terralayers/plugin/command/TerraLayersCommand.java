@@ -134,7 +134,8 @@ public class TerraLayersCommand {
 
         for (int y = minY; y < maxY; y += worldHeight) {
             // Create the world using the Multiverse API.
-            worldFutures.add(worldManager.createWorld(plugin, sender, worldBaseName + "_" + y + "_" + (y + worldHeight), delayTicks));
+            String generator = "Terraplusminus:" + (-y);
+                    worldFutures.add(worldManager.createWorld(plugin, sender, worldBaseName + "_" + y + "_" + (y + worldHeight), generator, delayTicks));
             delayTicks += delayIncrement;
         }
 

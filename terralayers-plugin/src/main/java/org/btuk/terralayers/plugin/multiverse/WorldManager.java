@@ -29,7 +29,7 @@ public class WorldManager {
         return this.coreApi;
     }
 
-    public CompletableFuture<LoadedMultiverseWorld> createWorld(JavaPlugin plugin, CommandSender sender, String name, long delayTicks) {
+    public CompletableFuture<LoadedMultiverseWorld> createWorld(JavaPlugin plugin, CommandSender sender, String name, String generator, long delayTicks) {
         MultiverseCoreApi coreApi = getCoreApi();
         CompletableFuture<LoadedMultiverseWorld> future = new CompletableFuture<>();
 
@@ -44,7 +44,7 @@ public class WorldManager {
             coreApi.getWorldManager().createWorld(
                             CreateWorldOptions.worldName(name)
                                     .environment(World.Environment.NORMAL)
-                                    .generator("minecraft:flat")) // TODO: T+- generator.
+                                    .generator(generator))
                     .onFailure(reason -> future.completeExceptionally(new MultiverseException("Failed to create world " + name + ": " + reason.getFailureReason())))
                     .onSuccess(world -> {
                         world.setAllowWeather(false);
