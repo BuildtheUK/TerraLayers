@@ -19,7 +19,7 @@ public interface LayerManager {
      *
      * @param globalY the y-level to get the layer for
      */
-    Optional<LayeredWorld> getLayerForGlobalY(int globalY);
+    Optional<LayeredWorld> getLayerForGlobalY(double globalY);
 
     /**
      * Finds the layer that matches the given Bukkit world.

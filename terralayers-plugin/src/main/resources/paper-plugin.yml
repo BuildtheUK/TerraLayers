@@ -9,3 +9,6 @@ dependencies:
     Multiverse-Core:
       load: BEFORE
       required: true
+    Terraplusminus:
+      load: BEFORE
+      required: true

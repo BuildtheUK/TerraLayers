@@ -59,18 +59,21 @@ public final class SwitchLayerListener implements TerraLayersListener {
 
         // If the y-level of the new layer does not fit in the world, teleport them to the correct layer.
         // Correct the y-level to take the offset of the new world into account.
-        int actualY = event.getTo().getBlockY() + currentLayer.getMinY();
+        double actualY = event.getTo().getY() + currentLayer.getMinY();
         if (currentLayer.getTeleportMinY() > actualY || currentLayer.getTeleportMaxY() < actualY) {
-            // TODO: Deal with players outside min or max y.
+            if (actualY < configManager.getGlobalMin() || actualY >= configManager.getGlobalMax()) {
+                event.getPlayer().sendMessage(Component.text("You cannot move outside of the configured world height range!", NamedTextColor.RED));
+                event.setCancelled(true);
+                return;
+            }
             layerManager.getLayerForGlobalY(actualY).ifPresent(newLayer -> {
                 plugin.getLogger().info("Player " + event.getPlayer().getName() + " moved to a layer outside of their current world, teleporting them to the correct layer.");
-                double y = event.getTo().getY();
-                y = currentLayer.getTeleportMinY() > actualY ? y + configManager.getWorldHeight() : y - configManager.getWorldHeight();
+                double y = actualY - newLayer.getMinY();
                 event.getTo().setWorld(newLayer.getWorld());
                 event.getTo().setY(y);
                 plugin.getLogger().info("Player " + event.getPlayer().getName() + " teleported to layer " + newLayer.getName() + " at y=" + y);
             });
         }
-        event.getPlayer().sendActionBar(Component.text("Y: " + actualY, NamedTextColor.GOLD, TextDecoration.BOLD));
+        event.getPlayer().sendActionBar(Component.text("Y: " + (int) actualY, NamedTextColor.GOLD, TextDecoration.BOLD));
     }
 }

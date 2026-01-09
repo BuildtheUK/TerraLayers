@@ -32,7 +32,7 @@ public class SimpleLayerManager implements LayerManager {
     }
 
     @Override
-    public Optional<LayeredWorld> getLayerForGlobalY(int globalY) {
+    public Optional<LayeredWorld> getLayerForGlobalY(double globalY) {
         return layers.values().stream()
                 .filter(l -> globalY >= l.getMinY() && globalY < l.getMaxY())
                 .findFirst();
